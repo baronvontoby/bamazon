@@ -74,7 +74,7 @@ function yesterday () {
             type: 'list',
             message: 'What would you like to do?',
             name: 'managerPrompt',
-            choices: ['List of Products', 'Add a new product','Exit']
+            choices: ['List of Products', 'Add a new product','Add Inventory','Exit']
         }
     ]).then(function(will, err){
         if (will.managerPrompt === 'List of Products'){
@@ -134,6 +134,57 @@ function yesterday () {
                     }
                 )
                 yesterday();
+            })
+        }
+        else if (will.managerPrompt ==='Add Inventory'){
+            inquirer.prompt([
+                {
+                    type: 'input',
+                    name: 'id',
+                    message: 'What product would you like to update?'
+                }
+            ]).then(function(res){
+                let id = res.id;
+                let quantity = res.quantity;
+                connection.query(
+                    'SELECT * FROM bamazon_db.products WHERE id="'+id+'"', function (err, res) {
+                        if (err) throw err;
+                        let existingQuantity = JSON.parse(JSON.stringify(res[0].stock_quantity));
+                        let name = JSON.parse(JSON.stringify(res[0].product_name));
+                        console.log('The product you are going to update is '+name+' and the current inventory is '+existingQuantity);
+                        inquirer.prompt([
+                            {
+                                type: 'confirm',
+                                message: 'Is this correct?',
+                                name: 'hello' 
+                            }
+                        ]).then(function(res){
+                            if ( res.hello === true ){
+                                inquirer.prompt([
+                                    {
+                                        type: 'number',
+                                        message: 'Quantity',
+                                        name: 'quantityUpdate'
+                                    }
+                                ]).then(function(res){
+                                    let numeric = res.quantityUpdate + existingQuantity;
+                                    connection.query(
+                                        "UPDATE bamazon_db.products SET ? WHERE ?",
+                                        [
+                                            {stock_quantity: numeric},
+                                            {id: id}
+                                        ]
+                                    )
+                                    yesterday();
+                                })
+                            }
+                            else {
+                                yesterday();
+                            }
+                        })
+
+                    }
+                )
             })
         }
         else if (will.managerPrompt ==='Exit') {
